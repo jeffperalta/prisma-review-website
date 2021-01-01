@@ -37,6 +37,24 @@ const users = [{
     age: 33
 }];
 
+const comments = [{
+    id: '110',
+    text: 'Excellent class to learn this topic!',
+    author: '123777'
+}, {
+    id: '111',
+    text: 'I have learned a lot during this course. Thanks',
+    author: '123773'
+}, {
+    id: '112',
+    text: 'The content is sufficient enough to keep me interested.',
+    author: '123774'
+}, {
+    id: '113',
+    text: 'I will give it a two thumbs up!',
+    author: '123777'
+}];
+
 // Type definitions (schema)
 const typeDefs = `
     type Query {
@@ -54,6 +72,7 @@ const typeDefs = `
         grades: [Int!]!
         posts(query: String): [Post!]!
         users(query: String): [User!]!
+        comments: [Comment!]!
     }
 
     type Book {
@@ -77,6 +96,12 @@ const typeDefs = `
         title: String!
         body: String!
         published: Boolean!
+        author: User!
+    }
+
+    type Comment {
+        id: ID!
+        text: String!
         author: User!
     }
 `;
@@ -157,6 +182,9 @@ const resolvers = {
             }else{
                 return users
             }
+        },
+        comments(parent, args, ctx, info) {
+            return comments;
         }
     },
     Post: {
@@ -167,6 +195,11 @@ const resolvers = {
     User: {
         posts(parent, args, ctx, info) {
             return posts.filter(p => p.author === parent.id);
+        }
+    },
+    Comment: {
+        author(parent, args, ctx, info) {
+            return users.find(u => u.id === parent.author);
         }
     }
 }
