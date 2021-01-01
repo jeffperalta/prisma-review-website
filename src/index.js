@@ -4,17 +4,20 @@ const posts = [{
     id: '123123-A',
     title: 'Photograpy',
     body: 'A course for taking stunning and beautiful photos',
-    published: true
+    published: true,
+    author: '123773'
 }, {
     id: '123123-B',
     title: 'Programming with NodeJs',
     body: 'Learn how to code using your favourite programming language',
-    published: false
+    published: false,
+    author: '123773'
 }, {
     id: '123123-C',
     title: 'GraphQL 101',
     body: 'Explore the world of GraphQL',
-    published: true
+    published: true,
+    author: '123774'
 }];
 
 const users = [{
@@ -63,9 +66,10 @@ const typeDefs = `
 
     type User {
         id: ID!
-        name: String!,
-        email: String!,
+        name: String!
+        email: String!
         age: Int
+        posts: [Post!]!
     }
 
     type Post {
@@ -73,6 +77,7 @@ const typeDefs = `
         title: String!
         body: String!
         published: Boolean!
+        author: User!
     }
 `;
 
@@ -152,6 +157,16 @@ const resolvers = {
             }else{
                 return users
             }
+        }
+    },
+    Post: {
+        author(parent, args, ctx, info) {
+            return users.find(u => u.id === parent.author);
+        }
+    },
+    User: {
+        posts(parent, args, ctx, info) {
+            return posts.filter(p => p.author === parent.id);
         }
     }
 }
