@@ -81,9 +81,28 @@ const typeDefs = `
     }
 
     type Mutation {
-        createUser(name: String!, email: String!, age: Int): User!
-        createPost(title: String!, body: String!, published: Boolean!, author: ID!): Post!
-        createComment(text: String!, author: ID!, post: ID!): Comment!
+        createUser(data: CreateUserInput): User!
+        createPost(data: CreatePostInput): Post!
+        createComment(data: CreateCommentInput): Comment!
+    }
+
+    input CreateUserInput {
+        name: String!
+        email: String!
+        age: Int
+    }
+
+    input CreatePostInput {
+        title: String!, 
+        body: String!, 
+        published: Boolean!, 
+        author: ID!
+    }
+
+    input CreateCommentInput {
+        text: String!, 
+        author: ID!, 
+        post: ID!
     }
 
     type Book {
@@ -203,12 +222,12 @@ const resolvers = {
     },
     Mutation: {
         createUser(parent, args, ctx, info) {
-            if (users.some(u => u.email === args.email)) {
+            if (users.some(u => u.email === args.data.email)) {
                 throw new Error('Email is taken.');
             }else{
                 const user = {
                     id: uuidv4(),
-                    ... args
+                    ... args.data
                 }
                 
                 users.push(user);
@@ -216,10 +235,10 @@ const resolvers = {
             }
         },
         createPost(parent, args, ctx, info) {
-            if(users.some(u => u.id === args.author)) {
+            if(users.some(u => u.id === args.data.author)) {
                 const post = {
                     id: uuidv4(),
-                    ...args
+                    ...args.data
                 }
                 posts.push(post)
                 return post;
@@ -228,11 +247,11 @@ const resolvers = {
             }
         },
         createComment(parent, args, ctx, info) {
-            if (users.some(u => u.id === args.author)) {
-                if(posts.some(p => p.id === args.post && p.published)) {
+            if (users.some(u => u.id === args.data.author)) {
+                if(posts.some(p => p.id === args.data.post && p.published)) {
                     const comment = {
                         id: uuidv4(),
-                        ...args
+                        ...args.data
                     }
 
                     comments.push(comment);
