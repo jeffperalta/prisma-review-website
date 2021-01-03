@@ -60,87 +60,6 @@ let comments = [{
     post: '123123-C'
 }];
 
-// Type definitions (schema)
-const typeDefs = `
-    type Query {
-        id: ID!
-        name: String!
-        age: Int!
-        employed: Boolean!
-        gpa: Float
-        book: Book!
-        user: User!
-        post: Post!
-        greeting(name: String): String!
-        add(a: Float!, b: Float!): Float!
-        addition(nums: [Float]): Float!
-        grades: [Int!]!
-        posts(query: String): [Post!]!
-        users(query: String): [User!]!
-        comments: [Comment!]!
-    }
-
-    type Mutation {
-        createUser(data: CreateUserInput!): User!
-        createPost(data: CreatePostInput!): Post!
-        createComment(data: CreateCommentInput!): Comment!
-        deleteUser(id: ID!): User!
-        deletePost(id: ID!): Post!
-        deleteComment(id: ID!): Comment!
-    }
-
-    input CreateUserInput {
-        name: String!
-        email: String!
-        age: Int
-    }
-
-    input CreatePostInput {
-        title: String!, 
-        body: String!, 
-        published: Boolean!, 
-        author: ID!
-    }
-
-    input CreateCommentInput {
-        text: String!, 
-        author: ID!, 
-        post: ID!
-    }
-
-    type Book {
-        title: String!
-        price: Float!
-        releaseYear: Int
-        rating: Float
-        inStock: Boolean!
-    }
-
-    type User {
-        id: ID!
-        name: String!
-        email: String!
-        age: Int
-        posts: [Post!]!
-        comments: [Comment!]!
-    }
-
-    type Post {
-        id: ID!
-        title: String!
-        body: String!
-        published: Boolean!
-        author: User!
-        comments: [Comment!]!
-    }
-
-    type Comment {
-        id: ID!
-        text: String!
-        author: User!
-        post: Post!
-    }
-`;
 
 // Resolvers (functions)
 const resolvers = {
@@ -334,7 +253,10 @@ const resolvers = {
 }
 
 
-const server = new GraphQLServer({typeDefs, resolvers})
+const server = new GraphQLServer({
+    typeDefs: './src/schema.graphql', 
+    resolvers
+})
 
 server.start(() => {
     console.log('The server is running..')
