@@ -1,7 +1,7 @@
 import { GraphQLServer } from 'graphql-yoga'
 import {v4 as uuidv4} from 'uuid';
 
-const posts = [{
+let posts = [{
     id: '123123-A',
     title: 'Photograpy',
     body: 'A course for taking stunning and beautiful photos',
@@ -21,7 +21,7 @@ const posts = [{
     author: '123774'
 }];
 
-const users = [{
+let users = [{
     id: '123777',
     name: 'Teddy',
     email: 'teddy@gg.com',
@@ -38,7 +38,7 @@ const users = [{
     age: 33
 }];
 
-const comments = [{
+let comments = [{
     id: '110',
     text: 'Excellent class to learn this topic!',
     author: '123777',
@@ -84,6 +84,7 @@ const typeDefs = `
         createUser(data: CreateUserInput!): User!
         createPost(data: CreatePostInput!): Post!
         createComment(data: CreateCommentInput!): Comment!
+        deleteUser(id: ID!): User!
     }
 
     input CreateUserInput {
@@ -259,6 +260,27 @@ const resolvers = {
                 }else{
                     throw new Error('Post must exist and must be published.');
                 }
+            }else{
+                throw new Error('User not found.');
+            }
+        },
+        deleteUser(parent, args, ctx, info) {
+            const index = users.findIndex(u => u.id === args.id);
+            if(index >= 0) {
+
+                comments = comments.filter(c =>  c.author !== args.id)
+
+                posts = posts.filter(p => {
+                    const match = p.author === args.id
+                    if(match) {
+                        comments = comments.filter(c => c.post !== p.id)
+                    }
+                    return !match
+                });
+
+                const deletedUsers = users.splice(index, 1);
+
+                return deletedUsers[0];
             }else{
                 throw new Error('User not found.');
             }
