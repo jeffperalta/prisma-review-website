@@ -14,35 +14,7 @@ const Mutation = {
             return user;
         }
     },
-    createPost(parent, args, {db}, info) {
-        if (db.users.some(u => u.id === args.data.author)) {
-            const post = {
-                id: uuidv4(),
-                ...args.data
-            }
-            db.posts.push(post)
-            return post;
-        } else {
-            throw new Error('User not found.');
-        }
-    },
-    createComment(parent, args, {db}, info) {
-        if (db.users.some(u => u.id === args.data.author)) {
-            if (db.posts.some(p => p.id === args.data.post && p.published)) {
-                const comment = {
-                    id: uuidv4(),
-                    ...args.data
-                }
 
-                db.comments.push(comment);
-                return comment;
-            } else {
-                throw new Error('Post must exist and must be published.');
-            }
-        } else {
-            throw new Error('User not found.');
-        }
-    },
     deleteUser(parent, args, {db}, info) {
         const index = db.users.findIndex(u => u.id === args.id);
         if (index >= 0) {
@@ -64,6 +36,47 @@ const Mutation = {
             throw new Error('User not found.');
         }
     },
+
+    updateUser(parent, args, {db}, info) {
+        const {id,data} = args;
+        const user = db.users.find(u => u.id === id)
+
+        if (user) {
+            if (typeof data.email === 'string') {
+                if (db.users.some(u => u.email === data.email && u.id !== id)) {
+                    throw new Error('Email is taken.');
+                }
+                user.email = data.email
+            }
+
+            if (typeof data.name === 'string') {
+                user.name = data.name
+            }
+
+            if (typeof data.age !== 'undefined') {
+                user.age = data.age
+            }
+
+            return user
+
+        } else {
+            throw new Error('User not found.');
+        }
+    },
+
+    createPost(parent, args, {db}, info) {
+        if (db.users.some(u => u.id === args.data.author)) {
+            const post = {
+                id: uuidv4(),
+                ...args.data
+            }
+            db.posts.push(post)
+            return post;
+        } else {
+            throw new Error('User not found.');
+        }
+    },
+
     deletePost(parent, args, {db}, info) {
         const index = db.posts.findIndex(p => p.id === args.id)
         if (index >= 0) {
@@ -74,12 +87,69 @@ const Mutation = {
             throw new Error('Post not found.');
         }
     },
+
+    updatePost(parent, args, {db}, info) {
+         const {id,data} = args
+         const post = db.posts.find(p => p.id === id)
+
+         if(post) {
+            if (typeof data.title === 'string') {
+                post.title = data.title
+            }
+
+            if (typeof data.body === 'string') {
+                post.body = data.body
+            }
+
+            if (typeof data.published === 'boolean') {
+                post.published = data.published
+            }
+            
+            return post
+
+         }else{
+            throw new Error('Post not found.');
+         }
+    },
+
+    createComment(parent, args, {db}, info) {
+        if (db.users.some(u => u.id === args.data.author)) {
+            if (db.posts.some(p => p.id === args.data.post && p.published)) {
+                const comment = {
+                    id: uuidv4(),
+                    ...args.data
+                }
+
+                db.comments.push(comment);
+                return comment;
+            } else {
+                throw new Error('Post must exist and must be published.');
+            }
+        } else {
+            throw new Error('User not found.');
+        }
+    },
+
+
     deleteComment(parent, args, {db}, info) {
         const index = db.comments.findIndex(c => c.id === args.id)
         if (index >= 0) {
             const deletedComments = db.comments.splice(index, 1);
             return deletedComments[0];
         } else {
+            throw new Error('Comment not found.');
+        }
+    },
+
+    updateComment(parent, args, {db}, info) {
+        const {id,data} = args
+        const comment = db.comments.find(c => c.id === id)
+        if(comment) {
+            if (typeof data.text === 'string') {
+                comment.text = data.text
+            }
+            return comment;
+        }else{
             throw new Error('Comment not found.');
         }
     }
