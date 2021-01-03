@@ -73,7 +73,12 @@ const Mutation = {
             db.posts.push(post)
 
             if (args.data.published) {
-                pubsub.publish('post', { post })
+                pubsub.publish('post', {
+                    post: {
+                        mutation: 'CREATED',
+                        data: post
+                    }
+                })
             }
 
             return post;
@@ -82,12 +87,22 @@ const Mutation = {
         }
     },
 
-    deletePost(parent, args, {db}, info) {
+    deletePost(parent, args, {db, pubsub}, info) {
         const index = db.posts.findIndex(p => p.id === args.id)
         if (index >= 0) {
             db.comments = db.comments.filter(c => c.post !== args.id)
-            const deletedPosts = db.posts.splice(index, 1);
-            return deletedPosts[0];
+            const [post] = db.posts.splice(index, 1);
+
+            if (post.published) {
+                pubsub.publish('post', {
+                    post: {
+                        mutation: 'DELETED',
+                        data: post
+                    }
+                })
+            }
+
+            return post;
         } else {
             throw new Error('Post not found.');
         }
@@ -96,6 +111,7 @@ const Mutation = {
     updatePost(parent, args, {db,pubsub}, info) {
          const {id,data} = args
          const post = db.posts.find(p => p.id === id)
+         const originalPost = {...post};
 
          if(post) {
             if (typeof data.title === 'string') {
@@ -108,11 +124,39 @@ const Mutation = {
 
             if (typeof data.published === 'boolean') {
                 post.published = data.published
-            }
 
-            if(data.published) {
-                pubsub.publish('post', {post})
+                if(originalPost.published && !post.published) {
+                    pubsub.publish('post', {
+                        post: {
+                            mutation: 'DELETED',
+                            data: originalPost
+                        }
+                    })
+                } else if (!originalPost.published && post.published) {
+                    pubsub.publish('post', {
+                        post: {
+                            mutation: 'CREATED',
+                            data: post
+                        }
+                    })
+                } else if (post.published) {
+                    pubsub.publish('post', {
+                        post: {
+                            mutation: 'UPDATED',
+                            data: post
+                        }
+                    })
+                }
+
+            } else if (post.published) {
+                pubsub.publish('post', {
+                    post: {
+                        mutation: 'UPDATED',
+                        data: post
+                    }
+                })
             }
+                
             
             return post
 
