@@ -64,13 +64,18 @@ const Mutation = {
         }
     },
 
-    createPost(parent, args, {db}, info) {
+    createPost(parent, args, {db, pubsub}, info) {
         if (db.users.some(u => u.id === args.data.author)) {
             const post = {
                 id: uuidv4(),
                 ...args.data
             }
             db.posts.push(post)
+
+            if (args.data.published) {
+                pubsub.publish('post', { post })
+            }
+
             return post;
         } else {
             throw new Error('User not found.');
@@ -88,7 +93,7 @@ const Mutation = {
         }
     },
 
-    updatePost(parent, args, {db}, info) {
+    updatePost(parent, args, {db,pubsub}, info) {
          const {id,data} = args
          const post = db.posts.find(p => p.id === id)
 
@@ -104,6 +109,10 @@ const Mutation = {
             if (typeof data.published === 'boolean') {
                 post.published = data.published
             }
+
+            if(data.published) {
+                pubsub.publish('post', {post})
+            }
             
             return post
 
@@ -112,7 +121,7 @@ const Mutation = {
          }
     },
 
-    createComment(parent, args, {db}, info) {
+    createComment(parent, args, {db, pubsub}, info) {
         if (db.users.some(u => u.id === args.data.author)) {
             if (db.posts.some(p => p.id === args.data.post && p.published)) {
                 const comment = {
@@ -121,6 +130,8 @@ const Mutation = {
                 }
 
                 db.comments.push(comment);
+                pubsub.publish(`comment_${args.data.post}`, { comment })
+
                 return comment;
             } else {
                 throw new Error('Post must exist and must be published.');
