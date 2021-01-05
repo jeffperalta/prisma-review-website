@@ -1,232 +1,94 @@
-import {v4 as uuidv4} from 'uuid';
+import {v4 as uuidv4} from 'uuid'
+import { hasDuplicate, validInput } from '../utils/util'
 
 const Mutation = {
-    createUser(parent, args, {db}, info) {
-        if (db.users.some(u => u.email === args.data.email)) {
-            throw new Error('Email is taken.');
-        } else {
-            const user = {
-                id: uuidv4(),
-                ...args.data
+    createUser(parent, args, {db, pubsub}, info) {
+        if (hasDuplicate(db.users, "email", args.data.email)) {
+            throw new Error("Email taken")
+        }
+
+        if (hasDuplicate(db.users, "username", args.data.username)) {
+            throw new Error("Username taken")
+        }
+
+        const user = {
+            id: uuidv4(),
+            ...args.data
+        }
+
+        db.users.push(user)
+
+        pubsub.publish('user', {
+            user: {
+                mutation: 'CREATED',
+                data: user
             }
+        })
 
-            db.users.push(user);
-            return user;
-        }
+        return user
     },
 
-    deleteUser(parent, args, {db}, info) {
-        const index = db.users.findIndex(u => u.id === args.id);
-        if (index >= 0) {
+    updateUser(parent, args, {db, pubsub}, info) {
+        const {id, data} = args
 
-            db.comments = db.comments.filter(c => c.author !== args.id)
-
-            db.posts = db.posts.filter(p => {
-                const match = p.author === args.id
-                if (match) {
-                    db.comments = db.comments.filter(c => c.post !== p.id)
-                }
-                return !match
-            });
-
-            const deletedUsers = db.users.splice(index, 1);
-
-            return deletedUsers[0];
-        } else {
-            throw new Error('User not found.');
-        }
-    },
-
-    updateUser(parent, args, {db}, info) {
-        const {id,data} = args;
         const user = db.users.find(u => u.id === id)
 
-        if (user) {
-            if (typeof data.email === 'string') {
-                if (db.users.some(u => u.email === data.email && u.id !== id)) {
-                    throw new Error('Email is taken.');
+        if(user) {
+            if (validInput(data.email)) {
+                if (hasDuplicate(db.users, "email", data.email, id)) {
+                    throw new Error("Email taken")
                 }
                 user.email = data.email
             }
-
-            if (typeof data.name === 'string') {
+            
+            if (validInput(data.username)) {
+                if (hasDuplicate(db.users, "username", data.username, id)) {
+                    throw new Error("Username taken")
+                }
+                user.username = data.username
+            }
+            
+            if(validInput(data.name)) {
                 user.name = data.name
             }
 
-            if (typeof data.age !== 'undefined') {
+            if (validInput(data.age, "number")) {
                 user.age = data.age
             }
 
+            pubsub.publish('user', {
+                user: {
+                    mutation: 'UPDATED',
+                    data: user
+                }
+            })
+
             return user
 
-        } else {
-            throw new Error('User not found.');
+        }else {
+            throw new Error("User not found")
         }
+        
     },
 
-    createPost(parent, args, {db, pubsub}, info) {
-        if (db.users.some(u => u.id === args.data.author)) {
-            const post = {
-                id: uuidv4(),
-                ...args.data
-            }
-            db.posts.push(post)
+    deleteUser(parent, args, {db, pubsub}, info) {
+        const index = db.users.findIndex(u => u.id === args.id)
 
-            if (args.data.published) {
-                pubsub.publish('post', {
-                    post: {
-                        mutation: 'CREATED',
-                        data: post
-                    }
-                })
-            }
-
-            return post;
-        } else {
-            throw new Error('User not found.');
-        }
-    },
-
-    deletePost(parent, args, {db, pubsub}, info) {
-        const index = db.posts.findIndex(p => p.id === args.id)
         if (index >= 0) {
-            db.comments = db.comments.filter(c => c.post !== args.id)
-            const [post] = db.posts.splice(index, 1);
 
-            if (post.published) {
-                pubsub.publish('post', {
-                    post: {
-                        mutation: 'DELETED',
-                        data: post
-                    }
-                })
-            }
+            const [user] = db.users.splice(index, 1)
 
-            return post;
-        } else {
-            throw new Error('Post not found.');
-        }
-    },
-
-    updatePost(parent, args, {db,pubsub}, info) {
-         const {id,data} = args
-         const post = db.posts.find(p => p.id === id)
-         const originalPost = {...post};
-
-         if(post) {
-            if (typeof data.title === 'string') {
-                post.title = data.title
-            }
-
-            if (typeof data.body === 'string') {
-                post.body = data.body
-            }
-
-            if (typeof data.published === 'boolean') {
-                post.published = data.published
-
-                if(originalPost.published && !post.published) {
-                    pubsub.publish('post', {
-                        post: {
-                            mutation: 'DELETED',
-                            data: originalPost
-                        }
-                    })
-                } else if (!originalPost.published && post.published) {
-                    pubsub.publish('post', {
-                        post: {
-                            mutation: 'CREATED',
-                            data: post
-                        }
-                    })
-                } else if (post.published) {
-                    pubsub.publish('post', {
-                        post: {
-                            mutation: 'UPDATED',
-                            data: post
-                        }
-                    })
-                }
-
-            } else if (post.published) {
-                pubsub.publish('post', {
-                    post: {
-                        mutation: 'UPDATED',
-                        data: post
-                    }
-                })
-            }
-                
-            
-            return post
-
-         }else{
-            throw new Error('Post not found.');
-         }
-    },
-
-    createComment(parent, args, {db, pubsub}, info) {
-        if (db.users.some(u => u.id === args.data.author)) {
-            if (db.posts.some(p => p.id === args.data.post && p.published)) {
-                const comment = {
-                    id: uuidv4(),
-                    ...args.data
-                }
-
-                db.comments.push(comment);
-                pubsub.publish(`comment_${args.data.post}`, { 
-                    comment: {
-                        mutation: 'CREATED',
-                        data: comment
-                    } 
-                })
-
-                return comment;
-            } else {
-                throw new Error('Post must exist and must be published.');
-            }
-        } else {
-            throw new Error('User not found.');
-        }
-    },
-
-
-    deleteComment(parent, args, {db, pubsub}, info) {
-        const index = db.comments.findIndex(c => c.id === args.id)
-        if (index >= 0) {
-            const [comment] = db.comments.splice(index, 1);
-
-            pubsub.publish(`comment_${comment.post}`, {
-                comment: {
+            pubsub.publish('user', {
+                user: {
                     mutation: 'DELETED',
-                    data: comment
+                    data: user
                 }
             })
+            
+            return user
 
-            return comment;
-        } else {
-            throw new Error('Comment not found.');
-        }
-    },
-
-    updateComment(parent, args, {db, pubsub}, info) {
-        const {id,data} = args
-        const comment = db.comments.find(c => c.id === id)
-        if(comment) {
-            if (typeof data.text === 'string') {
-                comment.text = data.text
-            }
-
-            pubsub.publish(`comment_${comment.post}`, {
-                comment: {
-                    mutation: 'UPDATED',
-                    data: comment
-                }
-            })
-
-            return comment;
         }else{
-            throw new Error('Comment not found.');
+            throw new Error("User not found")
         }
     }
 }
