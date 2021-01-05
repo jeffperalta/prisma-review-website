@@ -53,6 +53,12 @@ const prisma = new Prisma({
 // })
 
 // const createPostForUser = async (authorId, data) => {
+//     const userExist = await prisma.exists.User({
+//         id: authorId
+//     });
+//     if(!userExist) {
+//         throw new Error('User not found')
+//     }
 //     const post = await prisma.mutation.createPost({
 //         data: {
 //             ... data,
@@ -62,37 +68,54 @@ const prisma = new Prisma({
 //                 }
 //             }
 //         }
-//     }, '{ id }');
-//     const user = await prisma.query.user({
-//         where: {
-//             id: authorId
-//         }
-//     }, '{ id name email posts {id title published} }');
-//     return {post, user};
+//     }, '{ author { id name email posts { id title published } } }');
+//     return post.author;
 // }
 // createPostForUser("ckji82ipa01fr0842ujoy5b3z", {
-//     title: "Gardening",
-//     body: "Making your room greener",
+//     title: "Music Lessons 2",
+//     body: "Learn to read the music notes",
 //     published: true
 // }).then(data => {
-//     console.log("post and user: ", JSON.stringify(data, undefined, 2))
+//     console.log("New Post For User: ", JSON.stringify(data, undefined, 2))
+// }).catch((error) => {
+//     console.log(error.message);
 // })
 
 // const updatePostForUser = async(postId, data) => {
+//     const postExist = await prisma.exists.Post({
+//         id: postId
+//     });
+//     if(!postExist) {
+//         throw new Error('Post not found')
+//     }
 //     const post = await prisma.mutation.updatePost({
 //         where: {
 //             id: postId
 //         },
 //         data
-//     }, '{ author { id } }');
-//     const user = await prisma.query.user({
-//         where:{
-//             id: post.author.id
-//         }
-//     }, '{id name email age}')
-//     return user;
+//     }, '{ author { id name email posts { id title published } } }');
+//     return post.author;
 // };
-// updatePostForUser("ckjidlxos01tn0842b79z4m01", {title: "Gardening 2"})
+// updatePostForUser("ckjj9gq6n001m0842ls69l2nf", {
+//     title: "Basic Music Lessions"
+// })
 // .then(data => {
 //     console.log("user: ", JSON.stringify(data, undefined, 2))
+// })
+// .catch(error => {
+//     console.log(error.message);
+// })
+
+//prisma.query.comments(null,'{id text, author {name}}').then(data => console.log(JSON.stringify(data, undefined, 2)))
+// prisma.exists.Comment({
+//     id: "ckji7y8au01ct0842f8jgl8ul",
+//     author: {
+//         name: "Romina Peralta"
+//     }
+// }).then(exist => {
+//     if (exist) {
+//         console.log("Exist");
+//     }else{
+//         console.log("Does not exist");
+//     }
 // })
