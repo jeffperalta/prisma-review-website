@@ -1,5 +1,7 @@
 type Query {
-    users: [User]
+    users(query: String): [User!]!
+    books(query: String): [Book!]!
+    reviews(query: String): [Review!]!
 }
 
 type Mutation {
@@ -17,7 +19,8 @@ type User {
     username: String!
     name: String!
     email: String!
-    age: Int
+    age: Int,
+    reviews: [Review!]
 }
 
 input CreateUserInput {
@@ -32,6 +35,22 @@ input UpdateUserInput {
     name: String
     email: String
     age: Int
+}
+
+type Book {
+  id: ID!
+  title: String!
+  author: String!
+  isbn: String!
+  reviews: [Review!]
+}
+
+type Review {
+  id: ID!
+  text: String
+  rating: Float!
+  book: Book!
+  author: User!
 }
 
 enum MutationType {
